@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net48</TargetFramework>
+	<RootNamespace>Registro.Entidades</RootNamespace>
+	<LangVersion>latest</LangVersion>
+	<OptionStrict>On</OptionStrict>
+	<OptionExplicit>On</OptionExplicit>
+	<OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+</Project>

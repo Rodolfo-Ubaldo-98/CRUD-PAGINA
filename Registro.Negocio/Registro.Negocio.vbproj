@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net48</TargetFramework>
+	<RootNamespace>Registro.Negocio</RootNamespace>
+	<LangVersion>latest</LangVersion>
+	<OptionStrict>On</OptionStrict>
+	<OptionExplicit>On</OptionExplicit>
+	<OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <ItemGroup>
+	<ProjectReference Include="..\Registro.Datos\Registro.Datos.vbproj" />
+  </ItemGroup>
+  <ItemGroup>
+	<Reference Include="System.Configuration" />
+  </ItemGroup>
+</Project>

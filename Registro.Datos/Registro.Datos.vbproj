@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net48</TargetFramework>
+	<RootNamespace>Registro.Datos</RootNamespace>
+	<LangVersion>latest</LangVersion>
+	<OptionStrict>On</OptionStrict>
+	<OptionExplicit>On</OptionExplicit>
+	<OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <ItemGroup>
+	<ProjectReference Include="..\Registro.Entidades\Registro.Entidades.vbproj" />
+  </ItemGroup>
+  <ItemGroup>
+	<Reference Include="System.Configuration" />
+	<Reference Include="System.Data" />
+  </ItemGroup>
+</Project>

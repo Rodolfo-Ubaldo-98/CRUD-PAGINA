@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Registro.Datos/Registro.Datos.vbproj" />
+  <Project Path="Registro.Entidades/Registro.Entidades.vbproj" />
+  <Project Path="Registro.Negocio/Registro.Negocio.vbproj" />
+  <Project Path="Registro.Servicio/Registro.Servicio.vbproj" Id="a27637a8-616b-4cd0-83af-f6f0e44d232c" />
+</Solution>
