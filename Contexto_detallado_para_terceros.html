@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Contexto detallado del proyecto CRUD PAGINA</title>
+<style>
+@page { size: A4; margin: 22mm 20mm; }
+body { font-family: Georgia, 'Times New Roman', serif; color: #222; line-height: 1.65; font-size: 12pt; }
+h1 { font-family: Arial, sans-serif; color: #1f4e79; font-size: 23pt; margin-bottom: 5px; }
+h2 { font-family: Arial, sans-serif; color: #1f4e79; font-size: 16pt; margin-top: 26px; }
+p { text-align: justify; margin: 0 0 12px; }
+.meta { color: #666; font-family: Arial, sans-serif; font-size: 10pt; }
+</style>
+</head>
+<body>
+<h1>Contexto detallado del proyecto CRUD PAGINA</h1>
+<p class="meta">Documento explicativo para una persona externa al desarrollo</p>
+
+<p>El proyecto denominado CRUD PAGINA se encuentra almacenado en el equipo del usuario dentro de la carpeta C:\Users\Rodo-\source\repos\CRUD PAGINA\. La solución utilizada por el entorno de desarrollo se llama CRUD PAGINA.slnx y se trabaja principalmente desde Microsoft Visual Studio Community 2026, versión 18.10.3. El entorno de ejecución de comandos elegido es PowerShell. Además, el proyecto se encuentra bajo control de versiones Git, en la rama master, y tiene configurado como repositorio remoto la dirección https://github.com/Rodolfo-Ubaldo-98/CRUD-PAGINA.</p>
+
+<p>La información anterior describe la ubicación y el entorno de trabajo, pero no significa que se hayan realizado cambios en la aplicación. En la conversación actual no se ha ejecutado una tarea de programación concreta. No se ha corregido un error, no se ha implementado una funcionalidad nueva, no se ha cambiado una consulta y no se ha modificado la base de datos. El archivo que estaba abierto como referencia era Registro.Servicio\Views\Web.config, aunque también se había indicado previamente Registro.Servicio\Web.config como archivo de configuración relacionado con el proyecto. La existencia de esos archivos como contexto no implica que hayan sido editados.</p>
+
+<p>El único material técnico recibido hasta ahora son las instrucciones internas del proyecto. Estas instrucciones funcionan como reglas obligatorias para cualquier modificación futura. Su objetivo es evitar cambios incompatibles, problemas de auditoría, errores de identificación de usuarios y conflictos de dependencias entre proyectos.</p>
+
+<h2>Codificación y caracteres</h2>
+
+<p>La primera regla establece que los archivos deben manejarse utilizando UTF-8 de manera consistente. Esta decisión es importante porque la aplicación utiliza textos que pueden contener caracteres propios del idioma español, como acentos, la letra ñ, signos de interrogación invertidos y signos de exclamación invertidos. Si un archivo se guarda con una codificación incorrecta, esos caracteres pueden aparecer posteriormente como símbolos extraños o texto ilegible.</p>
+
+<p>En consecuencia, cualquier persona que modifique archivos del proyecto debe conservar su codificación y comprobar que el contenido siga mostrándose correctamente. Esta regla se aplica tanto al código fuente como a archivos de configuración, respuestas web, textos de la interfaz y cualquier otro archivo que contenga información visible para los usuarios.</p>
+
+<h2>Auditoría de la tabla Persona</h2>
+
+<p>El sistema utiliza una tabla de base de datos llamada Persona. Las operaciones que se realicen sobre esta tabla deben mantener el mecanismo de auditoría basado en triggers de SQL Server. Un trigger es una rutina que se ejecuta automáticamente cuando ocurre una operación determinada sobre una tabla. En este caso, el proyecto establece que deben existir y respetarse los triggers TR_Persona_Insert, TR_Persona_Update y TR_Persona_Delete.</p>
+
+<p>El trigger de inserción registra o procesa los eventos en los que se crea una persona. El trigger de actualización se ocupa de los cambios realizados sobre una persona existente. El trigger de eliminación interviene cuando se borra un registro. Estos mecanismos permiten conservar información sobre las operaciones realizadas y son parte del diseño de control y trazabilidad del sistema.</p>
+
+<p>Por esa razón, una modificación futura no debe eliminar, ignorar ni reemplazar esos triggers sin revisar antes las consecuencias. Cualquier procedimiento almacenado o código de aplicación que inserte, actualice o elimine registros de Persona debe ser compatible con el sistema de auditoría existente.</p>
+
+<h2>Obtención de identificadores</h2>
+
+<p>Cuando se crea un registro en Persona, la aplicación puede necesitar conocer el identificador que la base de datos acaba de generar. La instrucción permitida para obtener ese identificador es SCOPE_IDENTITY(). Esta función devuelve el último valor de identidad generado dentro del mismo ámbito de ejecución.</p>
+
+<p>No debe utilizarse @@IDENTITY. El motivo es que @@IDENTITY puede devolver un identificador generado por otra operación ejecutada dentro de un trigger. Por ejemplo, si una inserción en Persona activa un trigger que inserta datos en una tabla de auditoría con su propio campo identidad, @@IDENTITY podría devolver el identificador de la tabla de auditoría en lugar del identificador de Persona. SCOPE_IDENTITY() evita esa ambigüedad y permite que la aplicación reciba el valor correcto.</p>
+
+<h2>Restricción sobre OUTPUT</h2>
+
+<p>Otra regla indica que no se debe utilizar OUTPUT sin INTO en instrucciones INSERT o UPDATE que afecten a Persona. La cláusula OUTPUT puede devolver valores generados o modificados por una operación, pero su uso directo puede interferir con el diseño existente, especialmente cuando participan triggers o mecanismos de auditoría.</p>
+
+<p>Si en algún momento fuera necesario utilizar OUTPUT, tendría que emplearse con INTO y después de revisar cuidadosamente el procedimiento almacenado, los triggers y el comportamiento esperado por la aplicación. No se debe incorporar esta cláusula únicamente para obtener de forma rápida un identificador sin comprobar antes su compatibilidad con las reglas de auditoría.</p>
+
+<h2>Identificación del usuario en cambios sensibles</h2>
+
+<p>El sistema también exige que, antes de realizar cualquier operación que cambie un estatus, una aprobación o una credencial, se establezca el contexto de sesión de SQL Server mediante sp_set_session_context. El valor que debe enviarse es IdUsuarioApp, que identifica al usuario de la aplicación responsable de la operación.</p>
+
+<p>Esta información es necesaria para que la base de datos pueda relacionar el cambio realizado con la persona que lo solicitó o autorizó. Se aplica, por ejemplo, a cambios en el estado de una cuenta, decisiones de aprobación, modificaciones de contraseñas y otras operaciones relacionadas con credenciales o permisos.</p>
+
+<p>El contexto debe establecerse en la misma conexión que ejecutará la operación posterior. No es suficiente establecerlo en una conexión y después abrir otra para efectuar la actualización, porque el contexto de sesión pertenece a la conexión concreta y no se transfiere automáticamente a conexiones diferentes. Si se incumple esta condición, los triggers o procedimientos de auditoría podrían no identificar correctamente al usuario de aplicación.</p>
+
+<h2>Paquete de autenticación JWT</h2>
+
+<p>El paquete System.IdentityModel.Tokens.Jwt, en su versión 8.23.0, se instaló manualmente únicamente en el proyecto Registro.Servicio. Esta información es importante porque no debe suponerse que todos los proyectos de la solución tienen acceso a ese paquete.</p>
+
+<p>Si otro proyecto necesita utilizar clases o funcionalidades de ese paquete, primero debe identificarse claramente cuál es el proyecto que lo requiere y en qué archivo se utilizará. La instalación no debe hacerse de forma generalizada ni automática en todos los proyectos, ya que eso puede introducir dependencias innecesarias o conflictos de versiones.</p>
+
+<p>Si se produce un conflicto entre versiones del ensamblado, la solución prevista son los bindingRedirects dentro de Web.config. Estos redireccionamientos permiten indicar qué versión debe utilizarse cuando distintos componentes solicitan versiones compatibles pero diferentes de la misma biblioteca. Antes de cambiar una versión o instalar el paquete en otro proyecto, se deben revisar las referencias existentes y la configuración efectiva de la aplicación.</p>
+
+<h2>Qué se ha hecho hasta este momento</h2>
+
+<p>Hasta este momento se ha recopilado y explicado el contexto del proyecto, pero no se ha realizado una intervención técnica sobre la solución. No se han modificado archivos de código, archivos de configuración ni archivos de la base de datos. Tampoco se han creado procedimientos almacenados, triggers, clases, controladores, vistas o pruebas nuevas.</p>
+
+<p>No se ha actualizado ningún paquete, no se ha instalado System.IdentityModel.Tokens.Jwt en proyectos adicionales y no se ha cambiado ningún bindingRedirect. Tampoco se ha realizado una migración de versión de .NET ni se ha cambiado la estructura de la solución.</p>
+
+<p>De igual forma, no se ha ejecutado todavía una compilación completa de la solución, no se han ejecutado pruebas automatizadas y no se ha confirmado o corregido ningún error concreto. Por tanto, no sería correcto afirmar que la aplicación fue reparada, mejorada o actualizada. Lo único establecido hasta ahora son las reglas que deberán respetarse cuando se solicite un cambio.</p>
+
+<h2>Cómo debe continuar el trabajo</h2>
+
+<p>Cuando se solicite una modificación, primero será necesario localizar los proyectos y archivos relacionados con el problema. Después se deberán leer los archivos antes de editarlos y comprobar cómo se comunica la aplicación con la base de datos, cómo se gestionan las identidades y qué dependencias utilizan los proyectos implicados.</p>
+
+<p>Si el cambio afecta a Persona, habrá que comprobar los triggers y las consultas asociadas. Si se genera un nuevo identificador, deberá utilizarse SCOPE_IDENTITY(). Si se cambia un estatus, una aprobación o una credencial, deberá establecerse IdUsuarioApp mediante sp_set_session_context en la misma conexión. Si se necesita JWT fuera de Registro.Servicio, se deberá documentar el proyecto y archivo que lo necesitan y resolver los posibles conflictos mediante Web.config.</p>
+
+<p>Una vez aplicado cualquier cambio, se deberá compilar el proyecto o la solución afectada. Cuando existan pruebas relacionadas, también deberán ejecutarse. Finalmente, se deberá informar de forma clara qué archivos se modificaron, qué comportamiento se cambió, qué validaciones se realizaron y si quedó alguna limitación pendiente.</p>
+
+<h2>Conclusión</h2>
+
+<p>En resumen, el proyecto CRUD PAGINA tiene definido un conjunto de reglas técnicas relacionadas con la codificación UTF-8, la auditoría de la tabla Persona, la obtención segura de identificadores, la identificación del usuario que realiza cambios sensibles y el uso controlado de la biblioteca JWT. Estas reglas constituyen el marco que debe seguir cualquier desarrollador que trabaje en la solución.</p>
+
+<p>No existe todavía una modificación funcional que explicar ni una corrección aplicada que validar. El estado actual es el de un proyecto cuyo entorno y normas han sido identificados, pero cuya implementación aún no ha sido intervenida en el marco de esta conversación.</p>
+</body>
+</html>

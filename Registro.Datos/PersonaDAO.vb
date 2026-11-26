@@ -29,6 +29,166 @@ Public Class PersonaDAO
         End Using
     End Function
 
+    Public Function ObtenerUsuariosAdmin(rol As String, estatus As String, buscar As String, pagina As Integer, tamano As Integer, ByRef total As Integer) As List(Of UsuarioAdminDto)
+        Dim resultado As New List(Of UsuarioAdminDto)()
+        Dim inicio = (pagina - 1) * tamano
+        Const sql As String = "SELECT p.IdPersona, p.Nombre, p.Correo, p.IdRol, r.NombreRol, p.Estatus, p.Activo, p.FechaRegistro, " &
+            "(SELECT COUNT(1) FROM PersonaRostro pr WHERE pr.IdPersona = p.IdPersona) AS TieneRostro, COUNT(1) OVER() AS TotalFilas " &
+            "FROM Persona p INNER JOIN Rol r ON r.IdRol = p.IdRol " &
+            "WHERE (@Rol IS NULL OR r.NombreRol = @Rol) AND (@Estatus IS NULL OR p.Estatus = @Estatus) " &
+            "AND (@Buscar IS NULL OR p.Nombre LIKE '%' + @Buscar + '%' OR p.Correo LIKE '%' + @Buscar + '%') " &
+            "ORDER BY p.FechaRegistro DESC OFFSET @Inicio ROWS FETCH NEXT @Tamano ROWS ONLY;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@Rol", SqlDbType.NVarChar, 100).Value = If(String.IsNullOrWhiteSpace(rol), CType(DBNull.Value, Object), rol.Trim())
+            comando.Parameters.Add("@Estatus", SqlDbType.VarChar, 20).Value = If(String.IsNullOrWhiteSpace(estatus), CType(DBNull.Value, Object), estatus.Trim())
+            comando.Parameters.Add("@Buscar", SqlDbType.NVarChar, 200).Value = If(String.IsNullOrWhiteSpace(buscar), CType(DBNull.Value, Object), buscar.Trim())
+            comando.Parameters.Add("@Inicio", SqlDbType.Int).Value = inicio
+            comando.Parameters.Add("@Tamano", SqlDbType.Int).Value = tamano
+            conexion.Open()
+            Using lector = comando.ExecuteReader()
+                While lector.Read()
+                    total = Convert.ToInt32(lector("TotalFilas"))
+                    resultado.Add(New UsuarioAdminDto With {.IdPersona = Convert.ToInt32(lector("IdPersona")), .Nombre = Convert.ToString(lector("Nombre")), .Correo = Convert.ToString(lector("Correo")), .IdRol = Convert.ToInt32(lector("IdRol")), .Rol = Convert.ToString(lector("NombreRol")), .Estatus = Convert.ToString(lector("Estatus")), .Activo = Convert.ToBoolean(lector("Activo")), .FechaRegistro = Convert.ToDateTime(lector("FechaRegistro")), .TieneRostro = Convert.ToInt32(lector("TieneRostro"))})
+                End While
+            End Using
+        End Using
+        Return resultado
+    End Function
+
+    Public Function ObtenerResumenAdmin() As ResumenAdminDto
+        Dim resumen As New ResumenAdminDto()
+        Const sql As String = "SELECT COUNT(1) AS TotalUsuarios, SUM(CASE WHEN r.NombreRol='Cliente' THEN 1 ELSE 0 END) AS Clientes, SUM(CASE WHEN r.NombreRol='Empleado' THEN 1 ELSE 0 END) AS Empleados, SUM(CASE WHEN r.NombreRol='Administrador' THEN 1 ELSE 0 END) AS Administradores, SUM(CASE WHEN p.Estatus='Pendiente' THEN 1 ELSE 0 END) AS Pendientes, SUM(CASE WHEN p.FechaRegistro >= DATEADD(DAY,-7,GETDATE()) THEN 1 ELSE 0 END) AS Ultimos7 FROM Persona p INNER JOIN Rol r ON r.IdRol=p.IdRol; SELECT Estatus, COUNT(1) AS Total FROM Persona GROUP BY Estatus;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            conexion.Open()
+            Using lector = comando.ExecuteReader()
+                If lector.Read() Then
+                    resumen.TotalUsuarios = Convert.ToInt32(lector("TotalUsuarios"))
+                    resumen.Clientes = Convert.ToInt32(lector("Clientes"))
+                    resumen.Empleados = Convert.ToInt32(lector("Empleados"))
+                    resumen.Administradores = Convert.ToInt32(lector("Administradores"))
+                    resumen.Pendientes = Convert.ToInt32(lector("Pendientes"))
+                    resumen.RegistrosUltimos7Dias = Convert.ToInt32(lector("Ultimos7"))
+                End If
+                lector.NextResult()
+                While lector.Read()
+                    resumen.PorEstatus(Convert.ToString(lector("Estatus"))) = Convert.ToInt32(lector("Total"))
+                End While
+            End Using
+        End Using
+        Return resumen
+    End Function
+
+    Public Function ObtenerDetalleAdmin(idPersona As Integer) As UsuarioDetalle
+        Const sql As String = "SELECT p.IdPersona, p.Nombre, p.Correo, p.IdRol, p.Estatus, p.Activo, p.Foto, " &
+            "(SELECT COUNT(1) FROM PersonaRostro pr WHERE pr.IdPersona = p.IdPersona) AS TieneRostro FROM Persona p WHERE p.IdPersona = @IdPersona;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@IdPersona", SqlDbType.Int).Value = idPersona
+            conexion.Open()
+            Using lector = comando.ExecuteReader(CommandBehavior.SingleRow)
+                If lector.Read() Then
+                    Return New UsuarioDetalle With {
+                        .IdPersona = Convert.ToInt32(lector("IdPersona")),
+                        .Nombre = Convert.ToString(lector("Nombre")),
+                        .Correo = Convert.ToString(lector("Correo")),
+                        .IdRol = Convert.ToInt32(lector("IdRol")),
+                        .Estatus = Convert.ToString(lector("Estatus")),
+                        .Activo = Convert.ToBoolean(lector("Activo")),
+                        .Foto = If(lector("Foto") Is DBNull.Value, Nothing, DirectCast(lector("Foto"), Byte())),
+                        .TieneRostro = Convert.ToInt32(lector("TieneRostro"))
+                    }
+                End If
+            End Using
+        End Using
+        Return Nothing
+    End Function
+
+    ''' <summary>Obtiene el nombre del rol sin confiar en datos enviados por el cliente.</summary>
+    Public Function ObtenerNombreRol(idRol As Integer) As String
+        Const sql As String = "SELECT NombreRol FROM Rol WHERE IdRol = @IdRol;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@IdRol", SqlDbType.Int).Value = idRol
+            conexion.Open()
+            Dim valor = comando.ExecuteScalar()
+            Return If(valor Is Nothing OrElse valor Is DBNull.Value, Nothing, Convert.ToString(valor))
+        End Using
+    End Function
+
+    Public Function ObtenerIdRol(nombreRol As String) As Nullable(Of Integer)
+        Const sql As String = "SELECT IdRol FROM Rol WHERE NombreRol = @NombreRol;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@NombreRol", SqlDbType.NVarChar, 100).Value = nombreRol
+            conexion.Open()
+            Dim valor = comando.ExecuteScalar()
+            If valor Is Nothing OrElse valor Is DBNull.Value Then Return Nothing
+            Return Convert.ToInt32(valor)
+        End Using
+    End Function
+
+    Public Function ContarAdministradoresActivos() As Integer
+        Const sql As String = "SELECT COUNT(1) FROM Persona p INNER JOIN Rol r ON r.IdRol = p.IdRol " &
+                              "WHERE r.NombreRol = 'Administrador' AND p.Estatus = 'Activo' AND p.Activo = 1;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            conexion.Open()
+            Return Convert.ToInt32(comando.ExecuteScalar())
+        End Using
+    End Function
+
+    ''' <summary>Actualiza estado y aprobación con el contexto de auditoría de la aplicación.</summary>
+    Public Sub ActualizarEstatus(idPersona As Integer, estatus As String, idAprobador As Integer)
+        Const sql As String = "EXEC sys.sp_set_session_context @key = N'IdUsuarioApp', @value = @IdAprobador; " &
+                              "UPDATE Persona SET Estatus = @Estatus, Activo = CASE WHEN @Estatus = 'Activo' THEN 1 ELSE 0 END, " &
+                              "IdAprobador = @IdAprobador, FechaAprobacion = GETDATE() WHERE IdPersona = @IdPersona;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@IdAprobador", SqlDbType.Int).Value = idAprobador
+            comando.Parameters.Add("@Estatus", SqlDbType.VarChar, 20).Value = estatus
+            comando.Parameters.Add("@IdPersona", SqlDbType.Int).Value = idPersona
+            conexion.Open()
+            comando.ExecuteNonQuery()
+        End Using
+    End Sub
+
+    ''' <summary>Registra un intento y aplica el bloqueo temporal cuando corresponde.</summary>
+    Public Sub ActualizarIntentoLogin(correo As String, intentos As Integer, bloqueadoHasta As Nullable(Of DateTime))
+        Const sql As String = "UPDATE Persona SET IntentosFallidos = @IntentosFallidos, BloqueadoHasta = @BloqueadoHasta " &
+                              "WHERE Correo = @Correo;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@IntentosFallidos", SqlDbType.Int).Value = intentos
+            comando.Parameters.Add("@BloqueadoHasta", SqlDbType.DateTime).Value = If(bloqueadoHasta.HasValue, CType(bloqueadoHasta.Value, Object), DBNull.Value)
+            comando.Parameters.Add("@Correo", SqlDbType.NVarChar, 254).Value = correo
+            conexion.Open()
+            comando.ExecuteNonQuery()
+        End Using
+    End Sub
+
+    Public Sub RegistrarAcceso(idPersona As Integer)
+        Const sql As String = "UPDATE Persona SET UltimoAcceso = GETDATE(), IntentosFallidos = 0, BloqueadoHasta = NULL WHERE IdPersona = @IdPersona;"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@IdPersona", SqlDbType.Int).Value = idPersona
+            conexion.Open()
+            comando.ExecuteNonQuery()
+        End Using
+    End Sub
+
+    ''' <summary>Crea el primer administrador; el actor es nulo porque aún no existe.</summary>
+    Public Function InsertarAdministrador(persona As Persona) As Integer
+        Const sql As String = "INSERT INTO Persona (Nombre, Correo, Foto, IdRol, Activo, FechaRegistro, PasswordHash, PasswordSalt, Estatus, " &
+                              "IntentosFallidos, AceptoPrivacidad, FechaAceptacion) VALUES (@Nombre, @Correo, @Foto, @IdRol, 1, @FechaRegistro, " &
+                              "@PasswordHash, @PasswordSalt, 'Activo', 0, @AceptoPrivacidad, @FechaAceptacion); SELECT CAST(SCOPE_IDENTITY() AS int);"
+        Using conexion As New SqlConnection(_connectionString), comando As New SqlCommand(sql, conexion)
+            comando.Parameters.Add("@Nombre", SqlDbType.NVarChar, 200).Value = persona.Nombre
+            comando.Parameters.Add("@Correo", SqlDbType.NVarChar, 254).Value = persona.Correo
+            comando.Parameters.Add("@Foto", SqlDbType.VarBinary, -1).Value = If(persona.Foto Is Nothing, CType(DBNull.Value, Object), persona.Foto)
+            comando.Parameters.Add("@IdRol", SqlDbType.Int).Value = persona.IdRol
+            comando.Parameters.Add("@FechaRegistro", SqlDbType.DateTime).Value = DateTime.Now
+            comando.Parameters.Add("@PasswordHash", SqlDbType.VarBinary, 64).Value = persona.PasswordHash
+            comando.Parameters.Add("@PasswordSalt", SqlDbType.VarBinary, 32).Value = persona.PasswordSalt
+            comando.Parameters.Add("@AceptoPrivacidad", SqlDbType.Bit).Value = persona.AceptoPrivacidad
+            comando.Parameters.Add("@FechaAceptacion", SqlDbType.DateTime).Value = If(persona.FechaAceptacion.HasValue, CType(persona.FechaAceptacion.Value, Object), DBNull.Value)
+            conexion.Open()
+            Return Convert.ToInt32(comando.ExecuteScalar())
+        End Using
+    End Function
+
     ''' <summary>Guarda persona, credenciales y muestras faciales en una sola transacción.</summary>
     Public Function RegistrarPublicoAtomico(registro As RegistroAutenticacion) As Integer
         If registro Is Nothing OrElse registro.Persona Is Nothing Then Throw New ArgumentNullException(NameOf(registro))
@@ -45,6 +205,9 @@ Public Class PersonaDAO
             conexion.Open()
             Using transaccion As SqlTransaction = conexion.BeginTransaction()
                 Try
+                    Using contexto As New SqlCommand("EXEC sys.sp_set_session_context @key = N'IdUsuarioApp', @value = NULL;", conexion, transaccion)
+                        contexto.ExecuteNonQuery()
+                    End Using
                     Dim idPersona As Integer
                     Using comando As New SqlCommand(sqlPersona, conexion, transaccion)
                         AgregarParametrosPersona(comando, registro.Persona)

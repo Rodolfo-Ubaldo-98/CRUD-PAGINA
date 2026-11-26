@@ -4,6 +4,7 @@ Imports Registro.Entidades
 Imports Registro.Negocio
 
 <RoutePrefix("api/personas")>
+<Authorize(Roles:="Administrador")>
 Public Class PersonasController
     Inherits ApiController
 

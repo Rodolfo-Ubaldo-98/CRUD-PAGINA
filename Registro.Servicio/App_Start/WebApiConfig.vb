@@ -6,6 +6,7 @@ Imports System.Web.Http
 Public Module WebApiConfig
     Public Sub Register(ByVal config As HttpConfiguration)
         ' Configuración y servicios de Web API
+        config.MessageHandlers.Add(New JwtAuthenticationHandler())
 
         ' Rutas de Web API
         config.MapHttpAttributeRoutes()

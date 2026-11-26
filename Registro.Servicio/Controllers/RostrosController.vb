@@ -3,6 +3,7 @@ Imports System.Web.Http
 Imports Registro.Negocio
 
 <RoutePrefix("api")>
+<Authorize(Roles:="Administrador")>
 Public Class RostrosController
     Inherits ApiController
 

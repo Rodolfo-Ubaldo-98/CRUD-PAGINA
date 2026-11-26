@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Contexto del proyecto CRUD PAGINA</title>
+<style>
+@page { size: A4; margin: 22mm 18mm; }
+body { font-family: Arial, sans-serif; color: #222; line-height: 1.5; font-size: 11pt; }
+h1 { color: #1f4e79; font-size: 24pt; margin-bottom: 4px; }
+h2 { color: #1f4e79; border-bottom: 1px solid #9fbad0; padding-bottom: 4px; margin-top: 24px; }
+h3 { color: #365f91; margin-top: 18px; }
+.subtitle { color: #666; margin-top: 0; }
+code { background: #f1f1f1; padding: 1px 4px; font-family: Consolas, monospace; }
+pre { background: #f5f5f5; border: 1px solid #ddd; padding: 10px; white-space: pre-wrap; font-family: Consolas, monospace; font-size: 9pt; }
+li { margin-bottom: 5px; }
+.note { background: #eef5fb; border-left: 4px solid #1f4e79; padding: 10px 12px; }
+</style>
+</head>
+<body>
+<h1>Contexto del proyecto CRUD PAGINA</h1>
+<p class="subtitle">Resumen técnico del estado y de las directrices del proyecto</p>
+
+<div class="note"><strong>Estado actual:</strong> Hasta la fecha de elaboración de este documento no se han realizado modificaciones en el código, configuración, base de datos ni estructura de la solución. El contenido resume el contexto disponible y las reglas que deberán aplicarse en trabajos posteriores.</div>
+
+<h2>1. Información del entorno</h2>
+<ul>
+<li>Entorno de desarrollo: Microsoft Visual Studio Community 2026, versión 18.10.3.</li>
+<li>Carpeta raíz del workspace: <code>C:\Users\Rodo-\source\repos\CRUD PAGINA\</code>.</li>
+<li>Solución: <code>CRUD PAGINA.slnx</code>.</li>
+<li>Shell preferida: <code>powershell.exe</code>.</li>
+<li>Repositorio Git activo: rama <code>master</code>.</li>
+<li>Repositorio remoto configurado: <code>https://github.com/Rodolfo-Ubaldo-98/CRUD-PAGINA</code>.</li>
+<li>Archivo que estaba abierto como contexto: <code>Registro.Servicio\Web.config</code>.</li>
+</ul>
+
+<h2>2. Codificación de archivos</h2>
+<p>El proyecto requiere utilizar UTF-8 de forma consistente en archivos de código, configuración, respuestas web y textos de la aplicación. Esta regla es especialmente importante para conservar correctamente los caracteres españoles, como <code>á</code>, <code>é</code>, <code>í</code>, <code>ó</code>, <code>ú</code>, <code>ñ</code>, <code>¿</code> y <code>¡</code>.</p>
+<p>Cualquier modificación futura deberá conservar la codificación existente compatible con UTF-8 y evitar conversiones que produzcan caracteres corruptos o ilegibles.</p>
+
+<h2>3. Reglas de auditoría en SQL Server</h2>
+<h3>3.1 Triggers de auditoría de Persona</h3>
+<p>Las operaciones sobre la tabla <code>Persona</code> deben conservar el mecanismo de auditoría mediante los siguientes triggers:</p>
+<ul><li><code>TR_Persona_Insert</code></li><li><code>TR_Persona_Update</code></li><li><code>TR_Persona_Delete</code></li></ul>
+<p>No se debe sustituir este mecanismo por otra solución sin revisar previamente el diseño existente y justificar el cambio.</p>
+
+<h3>3.2 Identificadores generados</h3>
+<p>Después de insertar un registro, debe utilizarse <code>SCOPE_IDENTITY()</code> para recuperar el identificador generado. No debe utilizarse <code>@@IDENTITY</code>, porque podría devolver el identificador creado por una operación interna de un trigger u otra operación secundaria.</p>
+<pre>SELECT SCOPE_IDENTITY();</pre>
+
+<h3>3.3 Restricción sobre OUTPUT</h3>
+<p>No debe utilizarse <code>OUTPUT</code> sin <code>INTO</code> en operaciones <code>INSERT</code> o <code>UPDATE</code> sobre <code>Persona</code>. Antes de modificar estas operaciones deben revisarse los procedimientos almacenados, las consultas y los triggers relacionados.</p>
+
+<h3>3.4 Contexto de sesión para operaciones sensibles</h3>
+<p>Antes de cualquier operación que cambie el estatus, la aprobación o las credenciales, se debe ejecutar <code>sp_set_session_context</code> con el valor <code>IdUsuarioApp</code>. La configuración y la operación posterior deben ejecutarse en la misma conexión de base de datos.</p>
+<pre>EXEC sys.sp_set_session_context
+    @key = N'IdUsuarioApp',
+    @value = @IdUsuarioApp;</pre>
+<p>El contexto de sesión no se comparte automáticamente entre conexiones distintas. Por ese motivo, no sería correcto establecerlo en una conexión y efectuar la actualización en otra.</p>
+
+<h2>4. Gestión de System.IdentityModel.Tokens.Jwt</h2>
+<p>El paquete <code>System.IdentityModel.Tokens.Jwt</code>, versión <code>8.23.0</code>, se instaló manualmente únicamente en el proyecto <code>Registro.Servicio</code>.</p>
+<p>Si otro proyecto necesita utilizarlo, primero deben indicarse:</p>
+<ul><li>El proyecto que requiere el paquete.</li><li>El archivo que utilizará sus tipos o APIs.</li><li>El motivo técnico de la dependencia.</li></ul>
+<p>No se debe instalar el paquete automáticamente en todos los proyectos. Si aparecen conflictos de ensamblados, deben resolverse mediante <code>bindingRedirects</code> en <code>Web.config</code>, revisando las versiones efectivamente utilizadas.</p>
+
+<h2>5. Trabajo realizado hasta ahora</h2>
+<p>No se ha realizado ninguna de las siguientes acciones:</p>
+<ul>
+<li>No se ha inspeccionado la solución ni enumerado sus proyectos.</li>
+<li>No se han leído archivos de código para implementar una modificación.</li>
+<li>No se han modificado, creado ni eliminado archivos.</li>
+<li>No se han agregado ni actualizado paquetes.</li>
+<li>No se han ejecutado compilaciones ni pruebas.</li>
+<li>No se han ejecutado scripts SQL ni modificado procedimientos almacenados.</li>
+<li>No se han cambiado triggers de auditoría.</li>
+<li>No se ha modificado <code>Registro.Servicio\Web.config</code>.</li>
+<li>No se ha añadido JWT a ningún proyecto adicional.</li>
+<li>No se ha investigado un error concreto ni se ha aplicado una corrección funcional.</li>
+</ul>
+
+<h2>6. Procedimiento previsto para futuras tareas</h2>
+<ol>
+<li>Identificar la solución, los proyectos y los archivos afectados.</li>
+<li>Leer los archivos relevantes antes de modificarlos.</li>
+<li>Revisar referencias, contratos, usos y dependencias existentes.</li>
+<li>Determinar si el cambio afecta a SQL Server, auditoría, credenciales, JWT o configuración.</li>
+<li>Aplicar cambios mínimos y coherentes con el estilo del proyecto.</li>
+<li>Respetar UTF-8 y las reglas específicas de la tabla <code>Persona</code>.</li>
+<li>Evitar instalar paquetes innecesarios o modificar proyectos no relacionados.</li>
+<li>Compilar el proyecto o la solución afectada.</li>
+<li>Ejecutar las pruebas relevantes cuando existan.</li>
+<li>Informar de los archivos modificados, las validaciones realizadas y las limitaciones pendientes.</li>
+</ol>
+
+<h2>7. Conclusión</h2>
+<p>El proyecto se encuentra en una fase de preparación respecto a la información proporcionada en esta conversación. No existe todavía un cambio funcional o técnico aplicado que documentar. El contexto principal está formado por las características del entorno y las normas de codificación, auditoría SQL Server, manejo del contexto de sesión y gestión controlada del paquete JWT.</p>
+</body>
+</html>
